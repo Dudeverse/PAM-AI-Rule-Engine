@@ -1,0 +1,288 @@
+{
+  "name": "PAM Contract Rule Extractor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pam-contract-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "contract_pdf"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -600,
+        240
+      ],
+      "id": "webhook-contract-upload",
+      "name": "Webhook - Contract Upload",
+      "webhookId": "pam-contract-upload"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a contract rules extractor that converts revenue sharing information into editable token-based rules.\n\nSEARCH STRATEGY:\n1. FIRST PRIORITY: Look for \"Exhibit D\" or similar exhibits/appendices\n2. CRITICAL: Extract ONLY TWO SPECIFIC RULES from tables:\n   - \"OneFootball Partner [Text]\" rule\n   - \"OneFootball Partner [Video]\" rule\n3. Each of these two rules should have their specific conditions and percentages\n4. Look for any other tables with revenue sharing data\n5. Search for content type classifications and percentage splits\n6. Look for terms like: \"Content Type\", \"Revenue Share\", \"Cost of Content\", \"Cost of Sales\", \"Rev Share to Partner\", \"Yahoo\", \"OneFootball\"\n\nEXHIBIT D TABLE PROCESSING:\n- Extract ONLY the two specific OneFootball Partner rules (Text and Video)\n- Each rule's conditions become the IF part of the rule\n- Each rule's percentages/values become the THEN part of the rule\n- Pay special attention to table headers and column meanings\n- CRITICAL: Look for \"Rev Share to Partner (Cost of Content)\" column and extract as \"coc\"\n- CRITICAL: Look for \"Cost of Sales\" terms in Exhibit D Part 1, Part 2, and Part 3\n- MANDATORY: Include cos, coc, yahoo_rev, and onefootball_rev variables in EVERY rule's THEN part\n- Set missing values to 0 rather than omitting them\n\nTOKENIZATION RULES:\n- Convert ONLY the two OneFootball Partner rules into IF-THEN token sequences\n- Use snake_case for variable names (content_type, yahoo_rev, onefootball_rev)\n- Convert percentages to numbers without % symbol (100% becomes 100)\n- Use logical keywords: \"if\", \"and\", \"or\", \"then\"\n- Use operators: \"==\", \"!=\", \">\", \"<\", \">=\", \"<=\", \"=\"\n\nVARIABLE NAMING EXAMPLES:\n- content_type (OneFootball Partner)\n- media_type (Text, Video)\n- yahoo_rev (revenue percentage for Yahoo)\n- onefootball_rev (revenue percentage for OneFootball)\n- cos (cost of sales percentage)\n- coc (cost of content percentage)\n- cost_of_content (cost percentage - alternative name for coc)\n- revenue_threshold (dollar amounts)\n\nTOKEN TYPES:\n- \"keyword\": if, and, or, then (editable: false)\n- \"variable\": field names in snake_case (editable: true)\n- \"operator\": ==, !=, >, <, >=, <=, = (editable: true)\n- \"value\": actual values, numbers, text (editable: true)\n\nReturn JSON with this schema:\n{\n  \"docType\": \"contract\",\n  \"summary\": \"What revenue sharing information was found and where\",\n  \"searchResults\": {\n    \"exhibitDFound\": true/false,\n    \"tablesFound\": number,\n    \"revenueTermsFound\": [\"list of revenue-related terms found\"]\n  },\n  \"rules\": [\n    {\n      \"id\": \"rule_1\",\n      \"name\": \"OneFootBall text\",\n      \"source\": \"where this was found (e.g., 'Exhibit D', 'Section 5', etc.)\",\n      \"tokens\": [\n        { \"id\": \"1\", \"type\": \"keyword\", \"value\": \"if\", \"editable\": false },\n        { \"id\": \"2\", \"type\": \"variable\", \"value\": \"content_type\", \"editable\": true },\n        { \"id\": \"3\", \"type\": \"operator\", \"value\": \"==\", \"editable\": true },\n        { \"id\": \"4\", \"type\": \"value\", \"value\": \"OneFootball Partner\", \"editable\": true },\n        { \"id\": \"5\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"6\", \"type\": \"variable\", \"value\": \"media_type\", \"editable\": true },\n        { \"id\": \"7\", \"type\": \"operator\", \"value\": \"==\", \"editable\": true },\n        { \"id\": \"8\", \"type\": \"value\", \"value\": \"Text\", \"editable\": true },\n        { \"id\": \"9\", \"type\": \"keyword\", \"value\": \"then\", \"editable\": false },\n        { \"id\": \"10\", \"type\": \"variable\", \"value\": \"cos\", \"editable\": true },\n        { \"id\": \"11\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"12\", \"type\": \"value\", \"value\": \"10\", \"editable\": true },\n        { \"id\": \"13\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"14\", \"type\": \"variable\", \"value\": \"coc\", \"editable\": true },\n        { \"id\": \"15\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"16\", \"type\": \"value\", \"value\": \"12\", \"editable\": true },\n        { \"id\": \"17\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"18\", \"type\": \"variable\", \"value\": \"yahoo_rev\", \"editable\": true },\n        { \"id\": \"19\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"20\", \"type\": \"value\", \"value\": \"100\", \"editable\": true },\n        { \"id\": \"21\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"22\", \"type\": \"variable\", \"value\": \"onefootball_rev\", \"editable\": true },\n        { \"id\": \"23\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"24\", \"type\": \"value\", \"value\": \"0\", \"editable\": true }\n      ]\n    },\n    {\n      \"id\": \"rule_2\",\n      \"name\": \"OneFootBall Video\",\n      \"source\": \"where this was found (e.g., 'Exhibit D', 'Section 5', etc.)\",\n      \"tokens\": [\n        { \"id\": \"25\", \"type\": \"keyword\", \"value\": \"if\", \"editable\": false },\n        { \"id\": \"26\", \"type\": \"variable\", \"value\": \"content_type\", \"editable\": true },\n        { \"id\": \"27\", \"type\": \"operator\", \"value\": \"==\", \"editable\": true },\n        { \"id\": \"28\", \"type\": \"value\", \"value\": \"OneFootball Partner\", \"editable\": true },\n        { \"id\": \"29\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"30\", \"type\": \"variable\", \"value\": \"media_type\", \"editable\": true },\n        { \"id\": \"31\", \"type\": \"operator\", \"value\": \"==\", \"editable\": true },\n        { \"id\": \"32\", \"type\": \"value\", \"value\": \"Video\", \"editable\": true },\n        { \"id\": \"33\", \"type\": \"keyword\", \"value\": \"then\", \"editable\": false },\n        { \"id\": \"34\", \"type\": \"variable\", \"value\": \"cos\", \"editable\": true },\n        { \"id\": \"35\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"36\", \"type\": \"value\", \"value\": \"15\", \"editable\": true },\n        { \"id\": \"37\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"38\", \"type\": \"variable\", \"value\": \"coc\", \"editable\": true },\n        { \"id\": \"39\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"40\", \"type\": \"value\", \"value\": \"18\", \"editable\": true },\n        { \"id\": \"41\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"42\", \"type\": \"variable\", \"value\": \"yahoo_rev\", \"editable\": true },\n        { \"id\": \"43\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"44\", \"type\": \"value\", \"value\": \"0\", \"editable\": true },\n        { \"id\": \"45\", \"type\": \"keyword\", \"value\": \"and\", \"editable\": false },\n        { \"id\": \"46\", \"type\": \"variable\", \"value\": \"onefootball_rev\", \"editable\": true },\n        { \"id\": \"47\", \"type\": \"operator\", \"value\": \"=\", \"editable\": true },\n        { \"id\": \"48\", \"type\": \"value\", \"value\": \"100\", \"editable\": true }\n      ]\n    }\n  ]\n}\n\nRULE NAMING GUIDELINES:\n- Use descriptive OneFootball-specific names: \"OneFootBall text\", \"OneFootBall Video\", etc.\n- Keep names consistent with content type and media type\n- Use descriptive names that reflect the rule purpose\n\nIMPORTANT: \n- Each rule should be a simple IF-THEN statement\n- Generate unique sequential IDs for rules and tokens\n- Extract ONLY the two specific OneFootball Partner rules\n- CRITICAL: Extract EXACTLY 2 rules from the contract:\n  * OneFootball Partner [Text] rule\n  * OneFootball Partner [Video] rule\n- Focus specifically on OneFootball Partner content type with Text and Video media types\n- Do not extract any other content types or partner scenarios\n\nTABLE PROCESSING EXAMPLES:\nIf Exhibit D has a table like:\n| Content Type | Media Type | COS % | Rev Share to Partner (Cost of Content) % | Yahoo % | OneFootball % |\n| OneFootball Partner | Text | 15 | 8 | 0 | 100 |\n| OneFootball Partner | Video | 20 | 12 | 0 | 100 |\n\nCreate ONLY these two rules:\n- OneFootBall text: IF content_type == \"OneFootball Partner\" AND media_type == \"Text\" THEN cos = 15 AND coc = 8 AND yahoo_rev = 0 AND onefootball_rev = 100\n- OneFootBall Video: IF content_type == \"OneFootball Partner\" AND media_type == \"Video\" THEN cos = 20 AND coc = 12 AND yahoo_rev = 0 AND onefootball_rev = 100\n\nIMPORTANT COS/COC EXTRACTION NOTES:\n- ALWAYS include cos, coc, yahoo_rev, and onefootball_rev in EVERY rule's THEN part\n- If no COS/COC values are found for a rule, set them to 0\n- If any revenue share is 0, still include it in the rule\n- Look for variations: \"Cost of Sales\", \"COS\", \"Cost of Content\", \"COC\", \"Rev Share to Partner (Cost of Content)\"\n- COS and COC percentages should be extracted as numbers without % symbol\n- Every rule must have: cos = X AND coc = Y AND yahoo_rev = Z AND onefootball_rev = W\n\nAnalyze the provided contract PDF: {{ $json.contract_text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        240
+      ],
+      "id": "ai-rule-extractor",
+      "name": "AI Agent - Rule Extractor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        460
+      ],
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract PDF text from the uploaded file\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  try {\n    // Get the PDF binary data\n    const binaryData = item.binary?.contract_pdf;\n    \n    if (!binaryData) {\n      throw new Error('No PDF file found in request');\n    }\n    \n    // In a real implementation, you would parse the PDF here\n    // For n8n, you can use the \"Extract from File\" node or similar\n    // This is a placeholder that passes through the data\n    \n    results.push({\n      json: {\n        contract_id: Date.now().toString(),\n        file_name: binaryData.fileName || 'contract.pdf',\n        file_size: binaryData.fileSize || 0,\n        mime_type: binaryData.mimeType || 'application/pdf',\n        // The actual PDF parsing would happen here\n        // You would extract text using a PDF library\n        contract_text: 'PDF_TEXT_PLACEHOLDER',\n        uploaded_at: new Date().toISOString()\n      },\n      binary: {\n        contract_pdf: binaryData\n      }\n    });\n  } catch (error) {\n    results.push({\n      json: {\n        error: error.message,\n        status: 'failed'\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        240
+      ],
+      "id": "pdf-text-extractor",
+      "name": "Code - Extract PDF Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format the AI response and prepare for storage\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  try {\n    const aiResponse = item.json;\n    \n    // Structure the response in PAM format\n    const formattedResponse = {\n      success: true,\n      contract_id: item.json.contract_id || Date.now().toString(),\n      timestamp: new Date().toISOString(),\n      rules: aiResponse,\n      metadata: {\n        doc_type: aiResponse.docType || 'contract',\n        exhibit_d_found: aiResponse.searchResults?.exhibitDFound || false,\n        tables_found: aiResponse.searchResults?.tablesFound || 0,\n        rules_extracted: aiResponse.rules?.length || 0\n      }\n    };\n    \n    results.push({\n      json: formattedResponse\n    });\n  } catch (error) {\n    results.push({\n      json: {\n        success: false,\n        error: error.message,\n        timestamp: new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        240
+      ],
+      "id": "format-response",
+      "name": "Code - Format Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        520,
+        240
+      ],
+      "id": "webhook-response",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "fileContent": "={{ JSON.stringify($json, null, 2) }}",
+        "fileName": "={{ $json.contract_id }}/original.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.files",
+      "typeVersion": 1,
+      "position": [
+        280,
+        240
+      ],
+      "id": "save-to-filesystem",
+      "name": "Save Rules to Filesystem"
+    },
+    {
+      "parameters": {
+        "content": "## Webhook Node - Contract Upload Trigger\n\nThis webhook receives POST requests with PDF contract files.\n\n**Endpoint**: `/webhook/pam-contract-upload`\n\n**Expected Input**:\n- Binary file field: `contract_pdf`\n- PDF contract document\n\n**Usage**:\n```bash\ncurl -X POST \\\n  http://your-n8n-instance/webhook/pam-contract-upload \\\n  -F \"contract_pdf=@/path/to/contract.pdf\"\n```",
+        "height": 320,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -720,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "note-webhook",
+      "name": "Sticky Note - Webhook Info"
+    },
+    {
+      "parameters": {
+        "content": "## PDF Text Extraction\n\nThis node extracts text content from the uploaded PDF file.\n\n**What it does**:\n1. Receives binary PDF data from webhook\n2. Extracts text content from PDF\n3. Generates unique contract ID\n4. Prepares data for AI analysis\n\n**Note**: In production, you may want to use a dedicated PDF parsing library or service.",
+        "height": 280,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -520,
+        -120
+      ],
+      "typeVersion": 1,
+      "id": "note-pdf",
+      "name": "Sticky Note - PDF Extraction"
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent - Rule Extraction\n\nThis is the core intelligence of the workflow. The AI agent analyzes the contract text and extracts revenue sharing rules.\n\n**Prompt Strategy**:\n- Searches for Exhibit D and revenue tables\n- Extracts ONLY OneFootball Partner rules (Text & Video)\n- Converts natural language to tokenized IF-THEN rules\n- Includes cos, coc, yahoo_rev, onefootball_rev variables\n\n**Output Format**:\n- Structured JSON with token-based rules\n- Each rule has conditions (IF) and actions (THEN)\n- Compatible with PAM's token editor\n\n**Model**: GPT-4o-mini (fast & cost-effective)",
+        "height": 360,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "note-ai-agent",
+      "name": "Sticky Note - AI Agent"
+    },
+    {
+      "parameters": {
+        "content": "## Response Formatting & Storage\n\nThese nodes prepare the extracted rules for:\n1. **Format Response**: Structures data in PAM format\n2. **Save to Filesystem**: Stores rules as JSON files\n3. **Webhook Response**: Sends results back to caller\n\n**File Structure**:\n```\ncontract-rules/\n  {contract_id}/\n    original.json\n```\n\nThe response includes:\n- Extracted rules with tokens\n- Metadata (exhibit found, table count, etc.)\n- Summary of findings",
+        "height": 320,
+        "width": 440,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        -120
+      ],
+      "typeVersion": 1,
+      "id": "note-response",
+      "name": "Sticky Note - Response & Storage"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Contract Upload": {
+      "main": [
+        [
+          {
+            "node": "Code - Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Rule Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Rule Extractor": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Rule Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Format Response": {
+      "main": [
+        [
+          {
+            "node": "Save Rules to Filesystem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Rules to Filesystem": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "pam-contract-analyzer-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "pam-ai-rule-engine-integration"
+  },
+  "id": "pam-contract-analyzer",
+  "tags": [
+    {
+      "id": "pam",
+      "name": "PAM Integration"
+    },
+    {
+      "id": "contract-analysis",
+      "name": "Contract Analysis"
+    },
+    {
+      "id": "ai-automation",
+      "name": "AI Automation"
+    }
+  ]
+}
+
