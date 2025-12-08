@@ -23,11 +23,14 @@ import {
   Home,
   FileBarChart,
   Loader2,
+  Play,
+  Sparkles,
 } from "lucide-react";
 
 import { ContractSummaryPanel } from "@/components/contract-summary-panel";
 import { TokenRuleEditor } from "@/components/token-rule-editor";
 import { RevenueCalculator } from "@/components/revenue-calculator";
+import { DemoWorkflow } from "@/components/demo-workflow";
 import { useToast } from "@/hooks/use-toast";
 
 interface Contract {
@@ -39,7 +42,7 @@ interface Contract {
   fileName: string;
 }
 
-type PageView = "home" | "contracts" | "rules" | "revenue-calculator";
+type PageView = "home" | "contracts" | "rules" | "revenue-calculator" | "demo";
 
 export default function RuleEngineApp() {
   const { toast } = useToast();
@@ -182,6 +185,11 @@ export default function RuleEngineApp() {
   const selectedContract = contracts.find((c) => c.id === selectedContractId);
   const summaryContract = contracts.find((c) => c.id === summaryContractId);
 
+  // If in demo mode, render the demo component full-screen
+  if (currentPage === "demo") {
+    return <DemoWorkflow onExit={() => setCurrentPage("home")} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
@@ -258,7 +266,7 @@ export default function RuleEngineApp() {
 
       <div className="container mx-auto px-4 py-6">
         {currentPage === "home" && (
-          <div className="max-w-2xl mx-auto text-center py-20">
+          <div className="max-w-3xl mx-auto text-center py-16">
             <div className="mb-8">
               <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
                 Welcome to PAM Rule Engine
@@ -269,23 +277,54 @@ export default function RuleEngineApp() {
               </p>
             </div>
 
-            <Card className="max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 justify-center">
-                  <Upload className="h-5 w-5" />
-                  Upload Contract
-                </CardTitle>
-                <CardDescription>
-                  Select a contract file to begin creating rules
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors">
-                    <Upload className="h-8 w-8 mx-auto mb-4 text-slate-400" />
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                      Drop your contract file here or click to browse
-                    </p>
+            <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              {/* Demo Card */}
+              <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full -translate-y-16 translate-x-16" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 justify-center text-purple-700 dark:text-purple-300">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <Play className="h-5 w-5 text-white" />
+                    </div>
+                  </CardTitle>
+                  <CardTitle className="text-lg">Try Interactive Demo</CardTitle>
+                  <CardDescription className="text-purple-600/80 dark:text-purple-300/80">
+                    See how extraction, rule building, and calculations work
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => setCurrentPage("demo")}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    size="lg"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Launch Demo
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Upload Card */}
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 justify-center">
+                    <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                      <Upload className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </CardTitle>
+                  <CardTitle className="text-lg">Upload Contract</CardTitle>
+                  <CardDescription>
+                    Start with your own contract PDF
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer" onClick={() => document.getElementById("contract-upload")?.click()}>
+                      <Upload className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Drop PDF here or click to browse
+                      </p>
+                    </div>
                     <input
                       type="file"
                       id="contract-upload"
@@ -293,35 +332,13 @@ export default function RuleEngineApp() {
                       accept=".pdf,.doc,.docx"
                       onChange={handleFileUpload}
                     />
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() =>
-                              document
-                                .getElementById("contract-upload")
-                                ?.click()
-                            }
-                            size="icon"
-                            className="mx-auto"
-                          >
-                            <Upload className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Choose File</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Supported formats: PDF, DOC, DOCX
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
+
 
         {currentPage === "contracts" && (
           <div className="w-full mx-auto px-4">
