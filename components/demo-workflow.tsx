@@ -40,9 +40,9 @@ import {
 const DEMO_CONTRACT = {
   id: "demo-001",
   contractNumber: "2-0000274176",
-  partnerName: "OneFootball UK Ltd",
+  partnerName: "Acme Media Partners",
   product: "Content Distribution Agreement",
-  fileName: "OneFootball_Contract_2024.pdf",
+  fileName: "Acme_Media_Contract_2024.pdf",
   uploadedAt: new Date(),
 };
 
@@ -81,7 +81,7 @@ const DEMO_EXTRACTED_RULES = [
       { id: "t1", type: "keyword" as const, value: "if", editable: false },
       { id: "t2", type: "variable" as const, value: "content_type", editable: false },
       { id: "t3", type: "operator" as const, value: "==", editable: false },
-      { id: "t4", type: "value" as const, value: "OneFootball Partner", editable: true },
+      { id: "t4", type: "value" as const, value: "Acme Media Partner", editable: true },
       { id: "t5", type: "keyword" as const, value: "and", editable: false },
       { id: "t6", type: "variable" as const, value: "media_type", editable: false },
       { id: "t7", type: "operator" as const, value: "==", editable: false },
@@ -93,7 +93,7 @@ const DEMO_EXTRACTED_RULES = [
       { id: "t13", type: "variable" as const, value: "coc", editable: false },
       { id: "t14", type: "operator" as const, value: "=", editable: false },
       { id: "t15", type: "value" as const, value: "12", editable: true },
-      { id: "t16", type: "variable" as const, value: "yahoo_rev", editable: false },
+      { id: "t16", type: "variable" as const, value: "platform_rev", editable: false },
       { id: "t17", type: "operator" as const, value: "=", editable: false },
       { id: "t18", type: "value" as const, value: "60", editable: true },
       { id: "t19", type: "variable" as const, value: "onefootball_rev", editable: false },
@@ -122,7 +122,7 @@ const DEMO_EXTRACTED_RULES = [
       { id: "v13", type: "variable" as const, value: "coc", editable: false },
       { id: "v14", type: "operator" as const, value: "=", editable: false },
       { id: "v15", type: "value" as const, value: "50", editable: true },
-      { id: "v16", type: "variable" as const, value: "yahoo_rev", editable: false },
+      { id: "v16", type: "variable" as const, value: "platform_rev", editable: false },
       { id: "v17", type: "operator" as const, value: "=", editable: false },
       { id: "v18", type: "value" as const, value: "50", editable: true },
       { id: "v19", type: "variable" as const, value: "onefootball_rev", editable: false },
@@ -134,11 +134,11 @@ const DEMO_EXTRACTED_RULES = [
 
 // Demo revenue data
 const DEMO_REVENUE_DATA = [
-  { id: "1", contentType: "OneFootball - Borussia Dortmund", mediaType: "Text", grossRevenue: 4100 },
-  { id: "2", contentType: "OneFootball - Borussia Dortmund", mediaType: "Video", grossRevenue: 8250 },
-  { id: "3", contentType: "OneFootball - Borussia Mönchengladbach", mediaType: "Video", grossRevenue: 3870 },
-  { id: "4", contentType: "OneFootball - Bayern Munich", mediaType: "Text", grossRevenue: 12500 },
-  { id: "5", contentType: "OneFootball - RB Leipzig", mediaType: "Video", grossRevenue: 6300 },
+  { id: "1", contentType: "Acme Media - Sports Division", mediaType: "Text", grossRevenue: 4100 },
+  { id: "2", contentType: "Acme Media - Sports Division", mediaType: "Video", grossRevenue: 8250 },
+  { id: "3", contentType: "Acme Media - Entertainment", mediaType: "Video", grossRevenue: 3870 },
+  { id: "4", contentType: "Acme Media - News Channel", mediaType: "Text", grossRevenue: 12500 },
+  { id: "5", contentType: "Acme Media - Lifestyle", mediaType: "Video", grossRevenue: 6300 },
 ];
 
 type DemoStep = "intro" | "extraction" | "rules" | "calculation" | "results";
@@ -169,6 +169,53 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
     setIsAutoPlaying(false);
   }, []);
 
+  // Calculate revenue
+  const runCalculation = useCallback(async () => {
+    setCurrentStep("calculation");
+    setCalculationProgress(0);
+    setCalculationResults([]);
+
+    const results: any[] = [];
+
+    for (let i = 0; i < DEMO_REVENUE_DATA.length; i++) {
+      await new Promise((r) => setTimeout(r, 400));
+      setCalculationProgress(((i + 1) / DEMO_REVENUE_DATA.length) * 100);
+
+      const data = DEMO_REVENUE_DATA[i];
+      const isText = data.mediaType === "Text";
+
+      // Get rule values
+      const cos = 10;
+      const coc = isText ? 12 : 50;
+      const platformShare = isText ? 60 : 50;
+      const partnerShare = isText ? 40 : 50;
+
+      const revenuePostCOS = data.grossRevenue * (1 - cos / 100);
+      const cocAmount = revenuePostCOS * (coc / 100);
+      const revenuePostCOC = revenuePostCOS * (1 - coc / 100);
+      const platformAmount = revenuePostCOC * (platformShare / 100);
+      const partnerAmount = revenuePostCOC * (partnerShare / 100);
+
+      results.push({
+        ...data,
+        cos,
+        revenuePostCOS,
+        coc,
+        cocAmount,
+        revenuePostCOC,
+        platformShare,
+        partnerShare,
+        platformAmount,
+        partnerAmount,
+      });
+
+      setCalculationResults([...results]);
+    }
+
+    await new Promise((r) => setTimeout(r, 500));
+    setCurrentStep("results");
+  }, []);
+
   // Simulate extraction process
   const runExtraction = useCallback(async (autoPlay: boolean = false) => {
     setCurrentStep("extraction");
@@ -188,63 +235,18 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
 
     await new Promise((r) => setTimeout(r, 500));
     
-    // Move to rules step
-    setCurrentStep("rules");
-    setShowRulesAnimation(true);
-    
-    // If auto-playing, continue to calculation after a delay
+    // Only auto-advance if in auto-play mode
     if (autoPlay) {
+      // Move to rules step
+      setCurrentStep("rules");
+      setShowRulesAnimation(true);
+      
+      // Continue to calculation after a delay
       await new Promise((r) => setTimeout(r, 2500));
       runCalculation();
     }
-  }, []);
-
-  // Calculate revenue
-  const runCalculation = useCallback(async () => {
-    setCurrentStep("calculation");
-    setCalculationProgress(0);
-    setCalculationResults([]);
-
-    const results: any[] = [];
-
-    for (let i = 0; i < DEMO_REVENUE_DATA.length; i++) {
-      await new Promise((r) => setTimeout(r, 400));
-      setCalculationProgress(((i + 1) / DEMO_REVENUE_DATA.length) * 100);
-
-      const data = DEMO_REVENUE_DATA[i];
-      const isText = data.mediaType === "Text";
-
-      // Get rule values
-      const cos = 10;
-      const coc = isText ? 12 : 50;
-      const yahooShare = isText ? 60 : 50;
-      const partnerShare = isText ? 40 : 50;
-
-      const revenuePostCOS = data.grossRevenue * (1 - cos / 100);
-      const cocAmount = revenuePostCOS * (coc / 100);
-      const revenuePostCOC = revenuePostCOS * (1 - coc / 100);
-      const yahooAmount = revenuePostCOC * (yahooShare / 100);
-      const partnerAmount = revenuePostCOC * (partnerShare / 100);
-
-      results.push({
-        ...data,
-        cos,
-        revenuePostCOS,
-        coc,
-        cocAmount,
-        revenuePostCOC,
-        yahooShare,
-        partnerShare,
-        yahooAmount,
-        partnerAmount,
-      });
-
-      setCalculationResults([...results]);
-    }
-
-    await new Promise((r) => setTimeout(r, 500));
-    setCurrentStep("results");
-  }, []);
+    // In step-by-step mode, stay at extraction step and wait for user to click button
+  }, [runCalculation]);
 
   // Auto-play mode
   const startAutoPlay = useCallback(async () => {
@@ -662,7 +664,7 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
                       <TableHead className="text-purple-200/70">Type</TableHead>
                       <TableHead className="text-purple-200/70 text-right">Gross</TableHead>
                       <TableHead className="text-purple-200/70 text-right">Post-COS</TableHead>
-                      <TableHead className="text-purple-200/70 text-right">Yahoo</TableHead>
+                      <TableHead className="text-purple-200/70 text-right">Platform</TableHead>
                       <TableHead className="text-purple-200/70 text-right">Partner</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -694,7 +696,7 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
                           {formatCurrency(result.revenuePostCOS)}
                         </TableCell>
                         <TableCell className="text-right text-emerald-400 font-mono font-bold">
-                          {formatCurrency(result.yahooAmount)}
+                          {formatCurrency(result.platformAmount)}
                         </TableCell>
                         <TableCell className="text-right text-pink-400 font-mono font-bold">
                           {formatCurrency(result.partnerAmount)}
@@ -747,10 +749,10 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
                     <TrendingUp className="h-10 w-10 mx-auto text-emerald-400 mb-3" />
                     <div className="text-3xl font-bold text-emerald-400 mb-1">
                       {formatCurrency(
-                        calculationResults.reduce((sum, r) => sum + r.yahooAmount, 0)
+                        calculationResults.reduce((sum, r) => sum + r.platformAmount, 0)
                       )}
                     </div>
-                    <div className="text-sm text-emerald-200/70">Yahoo Revenue Share</div>
+                    <div className="text-sm text-emerald-200/70">Platform Revenue Share</div>
                   </div>
                 </CardContent>
               </Card>
@@ -788,7 +790,7 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
                       <TableHead className="text-purple-200/70 text-right">COS (10%)</TableHead>
                       <TableHead className="text-purple-200/70 text-right">COC</TableHead>
                       <TableHead className="text-purple-200/70 text-right">Net Revenue</TableHead>
-                      <TableHead className="text-purple-200/70 text-right">Yahoo Share</TableHead>
+                      <TableHead className="text-purple-200/70 text-right">Platform Share</TableHead>
                       <TableHead className="text-purple-200/70 text-right">Partner Share</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -822,7 +824,7 @@ export function DemoWorkflow({ onExit }: DemoWorkflowProps) {
                           {formatCurrency(result.revenuePostCOC)}
                         </TableCell>
                         <TableCell className="text-right text-emerald-400 font-mono font-bold">
-                          {formatCurrency(result.yahooAmount)}
+                          {formatCurrency(result.platformAmount)}
                         </TableCell>
                         <TableCell className="text-right text-pink-400 font-mono font-bold">
                           {formatCurrency(result.partnerAmount)}
